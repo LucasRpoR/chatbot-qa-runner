@@ -1,0 +1,14 @@
+{
+  "name": "item24 Chatbot",
+  "description": "item24 industrial aluminum profiles chatbot (ReshapeX platform)",
+  "url": "https://app.reshapex.ai/store/item2",
+
+  "chat_bubble_selector": "button[class*='rounded-full']",
+  "textarea_selector": "reshape-chat >> textarea",
+  "shadow_host": "reshape-chat",
+  "bot_message_selector": "[class*='self-start'] div.markdown",
+
+  "response_timeout": 120,
+  "stability_secs": 6.0,
+  "min_response_len": 50
+}

@@ -1,0 +1,29 @@
+# API keys — never commit these
+anthropic_key.txt
+.env
+
+# Result files (can be large, user-specific)
+results_*.csv
+results_*.xlsx
+
+# Screenshots and debug images
+*.png
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Exploration / debug scripts (not part of the template)
+explore*.py
+debug*.py
+inspect*.py
+extract_pdf.py
+
+# Local PDFs and backups
+pdf_docs/
+*.json.bak
+item24_results_backup.json
+item24_products.csv
+item_test_log.txt
+item_test_stdout.txt
