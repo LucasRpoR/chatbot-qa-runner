@@ -1,96 +1,72 @@
 # Chatbot QA Runner
 
-Automated QA pipeline for any web-based chatbot. Sends questions from a CSV through the chatbot UI, captures full responses, and validates them against expected behavior using Claude AI.
+Automated QA pipeline for any web-based chatbot. Give it a chatbot URL, a CSV with questions, and your Anthropic API key — it handles the rest.
 
 ## Setup (one time)
 
 ```bash
-# 1. Install Python dependencies
+# 1. Clone the repo
+git clone https://github.com/LucasRpoR/chatbot-qa-runner.git
+cd chatbot-qa-runner
+
+# 2. Install dependencies
 pip install -r requirements.txt
-
-# 2. Install the browser
 playwright install chromium
-
-# 3. Add your Anthropic API key
-# Create a file called anthropic_key.txt and paste your key inside
-# (or set the ANTHROPIC_API_KEY environment variable)
 ```
 
-## Running QA on a chatbot
-
-### Step 1 — Prepare your CSV
-
-The CSV needs these columns (any encoding — utf-8, cp1252, etc.):
-
-| input | expected_output | Agent answer | Validation |
-|-------|----------------|--------------|------------|
-| Your question here | What the bot should ideally answer | *(auto-filled)* | *(auto-filled)* |
-
-`Agent answer` and `Validation` can be empty — the script fills them automatically.
-
-### Step 2 — Choose or create a config
-
-Configs are in the `chatbot_configs/` folder. `config_item24.json` is included as an example.
-
-To create a config for a new chatbot, run the interactive wizard:
+## Run
 
 ```bash
-python setup_chatbot.py
+python run.py
 ```
 
-The wizard will ask for the chatbot URL, walk you through finding the right CSS selectors, and optionally test them in a live browser session.
+The script will ask for three things:
+1. **Chatbot URL** — the page where the chat is embedded
+2. **CSV file path** — your questions file (see format below)
+3. **Anthropic API key** — used to validate responses (saved locally for future runs)
 
-### Step 3 — Run
+It then auto-detects the chatbot UI, confirms with you, and runs all questions automatically.
 
-```bash
-python chatbot_qa_runner.py --config chatbot_configs/config_item24.json --input your_questions.csv
-```
+### CSV format
 
-Results are saved after every question (safe to interrupt and resume):
+At minimum, one column with the questions. A second column with expected behavior is optional but recommended for better validation:
 
-```bash
-# Resume an interrupted run
-python chatbot_qa_runner.py --config chatbot_configs/config_item24.json --input your_questions.csv --resume
+| input | expected_output |
+|-------|----------------|
+| What materials do you sell? | Should list the main product categories |
+| How do I place an order? | Should explain the ordering process |
 
-# Smoke test with only the first 3 questions
-python chatbot_qa_runner.py --config chatbot_configs/config_item24.json --input your_questions.csv --limit 3
+Column names are detected automatically — if they're different, the script will ask you which column is which.
 
-# Only run Claude validation (skip browser, validate already-captured answers)
-python chatbot_qa_runner.py --config chatbot_configs/config_item24.json --input your_questions.csv --validate-only
-```
+`Agent answer` and `Validation` columns are filled automatically.
 
 ## Output
 
-Two files are created in the same directory:
+Two files are saved after every question (safe to interrupt):
 
-- `results_<chatbot>_<timestamp>.csv` — all rows with Agent answer and Validation
-- `results_<chatbot>_<timestamp>.xlsx` — color-coded Excel report (green/yellow/red) with a summary sheet
+- `results_<chatbot>_<timestamp>.csv` — all questions with captured answers and validation scores
+- `results_<chatbot>_<timestamp>.xlsx` — color-coded Excel report (green/yellow/red) + summary sheet
 
-## Config file format
+## Advanced usage
 
-```json
-{
-  "name": "My Chatbot",
-  "description": "Optional description",
-  "url": "https://example.com/chat",
+```bash
+# Quick test with only the first 3 questions
+python run.py --url https://... --csv questions.csv --limit 3
 
-  "chat_bubble_selector": "button[class*='chat']",
-  "textarea_selector": "textarea",
-  "shadow_host": "",
-  "bot_message_selector": ".bot-message",
+# Run directly with a saved config (skips auto-detection)
+python chatbot_qa_runner.py --config chatbot_configs/config_item24.json --input questions.csv
 
-  "response_timeout": 120,
-  "stability_secs": 6.0,
-  "min_response_len": 50
-}
+# Resume an interrupted run
+python chatbot_qa_runner.py --config chatbot_configs/config_item24.json --input questions.csv --resume
+
+# Create a config manually (if auto-detection doesn't work for your chatbot)
+python setup_chatbot.py
 ```
 
-**Shadow DOM**: if the chatbot uses a custom HTML element (e.g. `<reshape-chat>`), set `shadow_host` to the element tag name and `bot_message_selector` to the selector *inside* the shadow root.
+## How it works
 
-## How to find selectors
-
-1. Open the chatbot URL in Chrome
-2. Right-click the element → **Inspect**
-3. In DevTools: right-click the highlighted element → **Copy → Copy selector**
-
-Or run `python setup_chatbot.py` which guides you through this with a live browser session.
+1. Opens a browser (visible) and navigates to the chatbot URL
+2. Auto-detects the chatbot type (supports ReshapeX, Intercom, Drift, Crisp, and generic chatbots)
+3. For each question: opens a fresh chat session, sends the question, waits for the full response
+4. Validates each response against the expected behavior using Claude AI
+5. Saves results to CSV and Excel after every question
